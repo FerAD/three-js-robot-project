@@ -1,0 +1,508 @@
+<!--
+Fernando Arey Duran A00397411
+Karen Abarca Garcia A01323627
+-->
+<html>
+	
+    <head>
+        <title> .:: Brazo Robotico ::.</title> 
+
+		<style> 
+            canvas { width: 100%; height: 100% }
+        </style> 
+
+	</head>
+
+
+	<body>
+		
+        <script src="three.min.js"></script>
+
+		<script>
+			window.addEventListener('keydown',doKeyDown,true);
+
+			/*POSICIONES INICIALES DE LA CAMARA*/
+            var zPos = 10.0;
+            var xPos = 5.0;
+            var ypos = 5.0;
+            var camRotation = 0;
+            var anguloMax = 0;
+            var anguloMin = -0.31;
+
+
+            /*MANEJO DE TECLAS PARA LA NAVEGACION*/
+            function doKeyDown(evt){
+
+                switch (evt.keyCode) {
+
+                    /*NAVEGACION*/
+                    case 38:  /* Up arrow was pressed */         
+                        var dx = 0.5 * Math.sin(camRotation); 
+                        var dz = 0.5 * Math.cos(camRotation); 
+                        zPos -= dz;
+                        xPos -= dx;
+                        break;
+
+                    case 40:  /* Down arrow was pressed */                        
+                        var dx = 0.5 * Math.sin(camRotation); 
+                        var dz = 0.5 * Math.cos(camRotation); 
+                        zPos += dz;
+                        xPos += dx;
+                        break;
+
+                    case 37:  /* Left arrow was pressed */                        
+                        camRotation += (5 * Math.PI) / 180;
+                        break;
+
+                    case 39:  /* Right arrow was pressed */                        
+                        camRotation -= (5 * Math.PI) / 180;
+                        break;
+
+                    case 87:  /* W was pressed */
+                        camera.position.y += 0.5;                        
+                        break;
+                    
+                    case 83:  /* S was pressed */
+                        camera.position.y -= 0.5;                        
+                        break;
+                    
+                    case 65:  /* A was pressed */                        
+                        var dx = 0.5 * Math.sin(camRotation + Math.PI / 2 ); 
+                        var dz = 0.5 * Math.cos(camRotation + Math.PI / 2 ); 
+                        zPos -= dz;
+                        xPos -= dx;
+                        break;
+                    
+                    case 68:  /* D was pressed */
+                        var dx = 0.5 * Math.sin(camRotation - Math.PI / 2); 
+                        var dz = 0.5 * Math.cos(camRotation- Math.PI / 2); 
+                        zPos -= dz;
+                        xPos -= dx;                   
+                        break;
+
+
+                    //MOVIMIENTO DEL BRAZO
+                    case 71: /*G -> brazo gira a la izquierda*/
+
+                        if (grupoPrincipal.rotation.z  > 0.38 || grupoPrincipal.rotation.z  < -0.38){console.log("extremos " + grupoPrincipal.rotation.y);} //No gira porque esta en los extremos
+
+                        else if (grupoPrincipal.rotation.z  > -0.36 || grupoPrincipal.rotation.z  < -0.36) {
+                            anguloMin = -0.30;
+
+                            if (grupoPrincipal.rotation.y > anguloMin){
+                                grupoPrincipal.rotation.y -= 0.1;  
+                                console.log("rotacion y " + grupoPrincipal.rotation.y);
+                            }
+                        }
+                        break;
+
+                    case 84: /*T -> brazo gira a la derecha*/
+                        if (grupoPrincipal.rotation.z  < 0.38 && grupoPrincipal.rotation.z  > -0.38) {
+                            grupoPrincipal.rotation.y += 0.1;
+                        console.log("rotacion y " + grupoPrincipal.rotation.y);
+                        }
+                        
+                        break;
+
+                    case 70: /*F -> brazo baja a la derecha */
+                        if (grupoPrincipal.rotation.z - 0.03 > -0.4) {
+                            grupoPrincipal.rotation.z -= 0.03;
+                            console.log(grupoPrincipal.rotation.z);
+                        }                    
+                        break;
+
+                    case 82: /*R -> brazo baja a la izquierda*/
+                        if (grupoPrincipal.rotation.z + 0.03 < 0.4) {
+                            grupoPrincipal.rotation.z += 0.03;
+                            console.log(grupoPrincipal.rotation.z);
+                        }
+                        break;
+
+                    case 72: /*H -> antebrazo baja*/
+                        if (grupoPrincipalAntebrazo.rotation.z - 0.03 > -0.3) 
+                            grupoPrincipalAntebrazo.rotation.z -= 0.03;
+                        
+                        break;
+
+                    case 89: /*Y -> antebrazo sube*/
+                        if (grupoPrincipalAntebrazo.rotation.z + 0.03 < 1.57) 
+                            grupoPrincipalAntebrazo.rotation.z += 0.03;
+                        
+                        break;
+
+                    case 74: /*J -> actuador baja */
+                        if (grupoTenazas.rotation.z > -0.3)
+                            grupoTenazas.rotation.z -= 0.1;
+
+                        break;
+
+                    case 85: /*U -> actuador sube */
+                        if (grupoTenazas.rotation.z < 0.3)
+                            grupoTenazas.rotation.z += 0.1;
+                        break;
+
+                    case 73: /*I -> actuador abre*/
+                        if (grupoTenazaSup.rotation.z < 1.25) {
+                            grupoTenazaSup.rotation.z += 0.03;
+                            grupoTenazaInf.rotation.z -= 0.03;
+                        }
+                        break;
+
+                    case 75: /*K -> actuador cierra*/
+                        if (grupoTenazaSup.rotation.z > 0.55) {
+                            grupoTenazaSup.rotation.z -= 0.03;
+                            grupoTenazaInf.rotation.z += 0.03;
+                        }
+                        break;
+
+
+                }//Fin switch
+
+            }//Fin funcion 
+
+
+            /*TRES COMPONENTES BASICOS DE LA ESCENA*/
+            var scene = new THREE.Scene();              //Escena
+            var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);  //Camara
+            var renderer = new THREE.WebGLRenderer();   //Render
+			
+
+            /*EJES DE ROTACION*/
+            var ejeBrazo = new THREE.Vector3(0.5,0.5,0);
+            
+
+            /*DECLARACION Y CREACION DE GRUPOS*/
+            var grupoBase = new THREE.Object3D();
+            var grupoBrazo = new THREE.Object3D();
+            var grupoAntebrazo = new THREE.Object3D();
+
+            var grupoTenazas = new THREE.Object3D();
+            grupoTenazas.applyMatrix( new THREE.Matrix4().makeTranslation( 7, 0.5, 0) );
+
+            var grupoTenazaSup = new THREE.Object3D();
+            var grupoTenazaInf = new THREE.Object3D();
+            var grupo = new THREE.Object3D();
+
+            var grupoPrincipal = new THREE.Object3D();
+            grupoPrincipal.applyMatrix( new THREE.Matrix4().makeTranslation( 0, -13, 0 ) );
+
+            var grupoPrincipalAntebrazo = new THREE.Object3D();
+            grupoPrincipalAntebrazo.applyMatrix( new THREE.Matrix4().makeTranslation( 0, 14, 0 ) );
+
+            /*MATERIALES*/
+            var texturaMetal1= new THREE.MeshLambertMaterial ({ map: THREE.ImageUtils.loadTexture("texturas/texturaMetal1.jpeg")});
+            var texturaMetal2 = new THREE.MeshLambertMaterial ({ map: THREE.ImageUtils.loadTexture("texturas/texturaMetal4.jpeg")});
+            var texturaMetal3 = new THREE.MeshLambertMaterial ({ map: THREE.ImageUtils.loadTexture("texturas/texturaMetal6.jpeg")});
+            var material = new THREE.MeshLambertMaterial({color: 0xEEEEEE});
+
+
+            /*CREANDO LA BASE (CARRO)*/
+            function creaBase(){
+
+                //Geometrias que conforman la caja
+                var baseID = new THREE.CubeGeometry(3,3,10);
+                var baseFA = new THREE.CubeGeometry(7,3,3);
+
+                //Geometria de las llantas
+                var geometriaLlanta = new THREE.CylinderGeometry(1,1,1,16,4,false);
+                
+                
+
+                /*CREANDO OBJETOS QUE CONFORMAN EL CARRITO*/
+
+                //Llantas
+                var llanta1 = new THREE.Mesh(geometriaLlanta,material);
+                var llanta2 = new THREE.Mesh(geometriaLlanta,material);
+                var llanta3 = new THREE.Mesh(geometriaLlanta,material);
+                var llanta4 = new THREE.Mesh(geometriaLlanta,material);
+
+                llanta1.position.x = -5;
+                llanta1.position.y =-12;
+                llanta1.position.z = 4.6;
+                llanta1.rotation.x = Math.PI * 90 / 180;
+
+                llanta2.position.x = 5;
+                llanta2.position.y = -12;
+                llanta2.position.z = 4.6;
+                llanta2.rotation.x = Math.PI * 90 / 180;
+
+                llanta3.position.x = -5;
+                llanta3.position.y = -12;
+                llanta3.position.z = -4.6;
+                llanta3.rotation.x = Math.PI * 90 / 180;
+
+                llanta4.position.x = 5;
+                llanta4.position.y = -12;
+                llanta4.position.z = -4.6;
+                llanta4.rotation.x = Math.PI * 90 / 180;
+
+
+                //Base
+                var figuraBaseI = new THREE.Mesh(baseID, texturaMetal1); 
+                var figuraBaseD = new THREE.Mesh(baseID, texturaMetal1);
+                var figuraBaseF = new THREE.Mesh(baseFA, texturaMetal1);
+                var figuraBaseA = new THREE.Mesh(baseFA, texturaMetal1);
+                figuraBaseI.position.y = -10;
+                figuraBaseI.position.x = -5;
+                
+                figuraBaseD.position.y = -10;
+                figuraBaseD.position.x = 5
+                
+                figuraBaseF.position.y = -10;
+                figuraBaseF.position.z = 3.5;
+
+                figuraBaseA.position.y = -10;
+                figuraBaseA.position.z = -3.5;
+
+                
+                //Anadiendo objetos al grupo que conforma la base
+                grupoBase.add(figuraBaseI);
+                grupoBase.add(figuraBaseD);
+                grupoBase.add(figuraBaseF);
+                grupoBase.add(figuraBaseA);
+                grupoBase.add(llanta1);
+                grupoBase.add(llanta2);
+                grupoBase.add(llanta3);
+                grupoBase.add(llanta4);
+
+                
+                //Anadiendo el grupo a la escena
+                scene.add(grupoBase);
+
+                
+            }
+            creaBase();
+
+
+
+
+
+            /*CREANDO EL BRAZO PRINCIPAL DEL ROBOT*/
+            
+            //function brazoPrincipal(){
+
+            //Geometrias que conforman el brazo
+            var cubo = new THREE.CubeGeometry(3,12,0.3);                             //Cubos laterales
+            var cuboCentral = new THREE.CubeGeometry(3,10,1.4);                      //Cubo principal
+            var geometriaPunta = new THREE.CylinderGeometry (1.5,1.5,.3,16,4,false); //Parte redonda (arriba) del brazo
+            var geometriaPerno = new THREE.CylinderGeometry (.4,.4, 2.5, 16,4,false);//Perno
+
+
+            //Creando los objetos que conforman el brazo usando las geometrias definidas
+            var figuraCuboD = new THREE.Mesh(cubo, texturaMetal2);
+            var figuraCuboC = new THREE.Mesh(cuboCentral, texturaMetal2);
+            var figuraCuboA = new THREE.Mesh(cubo, texturaMetal2);
+            var figuraPuntaI = new THREE.Mesh(geometriaPunta,texturaMetal2);
+            var figuraPuntaD = new THREE.Mesh(geometriaPunta,texturaMetal2);
+            var figuraPerno = new THREE.Mesh(geometriaPerno,texturaMetal2);
+
+            figuraCuboD.position.z = 0.85;
+            figuraCuboA.position.z = -0.85;
+
+            figuraPuntaI.position.y = 6;
+            figuraPuntaI.position.z = .85;
+            figuraPuntaI.rotation.x = Math.PI * 90 / 180;
+
+            figuraPuntaD.position.y = 6;
+            figuraPuntaD.position.z = -.85;
+            figuraPuntaD.rotation.x = Math.PI * 90 / 180;
+
+            figuraPerno.position.y = 6.5;
+            figuraPerno.position.z = 0;
+            figuraPerno.rotation.x = Math.PI * 90 / 180;
+
+
+            //Anadiendo objetos al grupo que conforma el brazo
+            grupoBrazo.add(figuraCuboD);
+            grupoBrazo.add(figuraCuboC);
+            grupoBrazo.add(figuraCuboA);
+            grupoBrazo.add(figuraPuntaI);
+            grupoBrazo.add(figuraPuntaD);
+            grupoBrazo.add(figuraPerno);
+            grupoBrazo.position.y = 8;
+        
+            
+
+
+            /*CREANDO EL ANTEBRAZO*/
+
+            //function brazoSecundario(){
+     
+            //Geometrias que conforman el antebrazo
+            var cubo = new THREE.CubeGeometry(2,8,1);                                  //Cubo principal
+            var geometriaPunta = new THREE.CylinderGeometry (1,1,.345,16,4,false);     //Parte redonda (arriba) del brazo
+            var geometriaPerno = new THREE.CylinderGeometry (.4,.4, 1.4, 16,4,false);  //Perno
+
+            //Creando los objetos que conforman el brazo usando las geometrias definidas
+            var figuraCubo = new THREE.Mesh(cubo, texturaMetal2);
+            var figuraPuntaI = new THREE.Mesh(geometriaPunta,texturaMetal2);
+            var figuraPuntaD = new THREE.Mesh(geometriaPunta,texturaMetal2);
+            var figuraPerno = new THREE.Mesh(geometriaPerno,texturaMetal2);
+
+            figuraCubo.position.y = -3;
+            figuraCubo.position.x = 0.5;
+
+            figuraPuntaI.position.y = -7;
+            figuraPuntaI.position.z = .327;
+            figuraPuntaI.position.x = 0.5;
+            figuraPuntaI.rotation.x = Math.PI * 90 / 180;
+
+            figuraPuntaD.position.y = -7;
+            figuraPuntaD.position.z = -.33;
+            figuraPuntaD.position.x = 0.5;
+            figuraPuntaD.rotation.x = Math.PI * 90 / 180;
+
+            figuraPerno.position.y = -7;
+            figuraPerno.position.z = 0;
+            figuraPerno.position.x = 0.5;
+            figuraPerno.rotation.x = Math.PI * 90 / 180;
+
+
+
+            //Anadiendo objetos al grupo que conforma el antebrazo
+            grupoAntebrazo.add(figuraCubo);
+            grupoAntebrazo.add(figuraPuntaI);
+            grupoAntebrazo.add(figuraPuntaD);
+            grupoAntebrazo.add(figuraPerno);
+
+            grupoAntebrazo.rotation.z = Math.PI/2;
+
+            
+
+
+
+            /*CREANDO LAS TENAZAS*/
+
+            //Geometrias que conforman el antebrazo
+            var geometriaBase = new THREE.CubeGeometry(3,1,.15);
+            var geometriaExtremo = new THREE.CubeGeometry(2,1,.15);
+
+
+            //Creo los objetos que conforman las tenazas
+            var figuraBaseS = new THREE.Mesh(geometriaBase, material);
+            var figuraBaseI = new THREE.Mesh(geometriaBase, material);
+            var figuraExtremoS = new THREE.Mesh(geometriaExtremo, material);
+            var figuraExtremoI = new THREE.Mesh(geometriaExtremo, material);
+            
+            //SUPERIOR
+            figuraBaseS.position.x = 1.1;
+            figuraExtremoS.position.x = 3;
+            figuraExtremoS.position.y = -0.51;
+            figuraExtremoS.rotation.z = -1.6;
+            //figuraExtremoS.rotation.z = Math.PI/2;
+
+            //INFERIOR
+            figuraBaseI.position.x = 1.5;
+            figuraExtremoI.position.x = 3;
+            figuraExtremoI.position.y = 0.51;
+            figuraExtremoI.rotation.z = 1.6;
+
+
+            //Anadiendo objetos al grupo que conforman las tenazas
+            grupoTenazaSup.add(figuraBaseS);
+            grupoTenazaSup.add(figuraExtremoS);
+            grupoTenazaSup.position.z = .075;
+            grupoTenazaSup.rotation.z = 0.785;
+
+            grupoTenazaInf.add(figuraBaseI);
+            grupoTenazaInf.add(figuraExtremoI);
+            grupoTenazaInf.position.z = -.075;
+            grupoTenazaInf.rotation.z = -0.785;
+
+            grupoTenazas.add(grupoTenazaSup);
+            grupoTenazas.add(grupoTenazaInf);
+            
+            /*grupoTenazas.position.x = 7;
+            grupoTenazas.position.y = 6;*/
+            
+
+            
+
+            //Anadiendo los grupos individuales al grupo principal (brazo y antebrazo y tenazas)
+            
+            
+
+            
+
+
+
+            //Anadiendo los grupos individuales al grupo principal del antebrazo (antebrazo y tenazas)
+            grupoPrincipalAntebrazo.add(grupoAntebrazo);
+            grupoPrincipalAntebrazo.add(grupoTenazas);
+
+            grupoPrincipal.add(grupoBrazo);
+            grupoPrincipal.add(grupoPrincipalAntebrazo);
+            /*grupoPrincipal.add(grupoAntebrazo);
+            grupoPrincipal.add(grupoTenazas);*/
+
+            
+            grupo.add(grupoPrincipal);
+            grupo.add(grupoBase);
+
+
+            //Anadiendo los grupos a la escena
+            //scene.add(grupoPrincipalAntebrazo);
+            //scene.add(grupoPrincipal);
+            scene.add(grupo);
+            //scene.add(grupoTenazas);
+
+
+		    
+            /*CREANDO LUCES*/
+            var pointLight = new THREE.PointLight( 0xFFFFFF );
+            var pointLight2 = new THREE.PointLight( 0xFFFFFF );
+            var pointLight3 = new THREE.PointLight( 0xFFFFFF );
+            var pointLight4 = new THREE.PointLight( 0xFFFFFF );
+            var pointLight5 = new THREE.PointLight( 0xFFFFFF );
+            var pointLight6 = new THREE.PointLight( 0xFFFFFF );
+
+            // set its position (ARRIBA)
+            pointLight.position.x = 0;
+            pointLight.position.y = 1000;
+            pointLight.position.z = 0;
+            // add to the scene
+            scene.add(pointLight);
+            
+            // set its position (ABAJO)
+            pointLight2.position.x = 0;
+            pointLight2.position.y = -1000;
+            pointLight2.position.z = 0;
+            // add to the scene
+            scene.add(pointLight2);
+
+            // set its position
+            pointLight3.position.x = -30;
+            pointLight3.position.y = -30;
+            pointLight3.position.z = 15;
+            // add to the scene
+            scene.add(pointLight3);
+
+            // set its position
+            pointLight4.position.x = 30;
+            pointLight4.position.y = -30;
+            pointLight4.position.z = -15;
+            // add to the scene
+            scene.add(pointLight4);
+        
+
+
+
+            /*RENDER*/
+            renderer.setClearColor(0x000000, 1);
+            //tamaño del render
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+            //envio el render al html
+            document.body.appendChild(renderer.domElement); 
+            var render = function () { //creo la variable render y le asigno una funcion 
+	            requestAnimationFrame(render);  // pido el render
+                camera.position.z = zPos;
+                camera.position.x = xPos; 
+                camera.rotation.y = camRotation;
+
+                grupo.rotation.x = Math.PI/2;
+	            renderer.render(scene, camera);     //actualiza la escena y camara
+            }; 
+            render();     
+		</script>
+	</body>
+</html>
